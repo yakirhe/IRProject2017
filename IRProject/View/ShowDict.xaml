@@ -1,0 +1,24 @@
+﻿<Window x:Class="IRProject.View.ShowDict"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:IRProject.View"
+        mc:Ignorable="d"
+        Title="termsDictionary" Height="300" Width="300">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Label Content="Terms dictionary" HorizontalAlignment="Center" Foreground="DarkBlue"></Label>
+        <ListView Grid.Row="1" Name="results" ItemsSource="{Binding VM_TermFreqDict}" GridViewColumnHeader.Click="results_Click">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Term" DisplayMemberBinding="{Binding Path=Key}"></GridViewColumn>
+                    <GridViewColumn Header="Frequency in collection" DisplayMemberBinding="{Binding Value}" ></GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </Grid>
+</Window>

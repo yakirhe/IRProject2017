@@ -1,0 +1,60 @@
+﻿<Window x:Class="IRProject.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:IRProject"
+        mc:Ignorable="d"
+        Title="Main" Height="400" Width="500" ResizeMode="NoResize">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Label Content="Start engine" HorizontalAlignment="Center" FontSize="25" Grid.RowSpan="2" Foreground="DarkRed" FontWeight="Bold" Grid.ColumnSpan="2"></Label>
+        <TextBox Grid.Row="2" Name="corpusText"></TextBox>
+        <Button Grid.Row="2" Grid.Column="1" Content="Choose corpus and stop words" Click="Button_Click"></Button>
+        <TextBox Grid.Row="4" Name="postingText"></TextBox>
+        <Button Grid.Row="4" Grid.Column="1" Content="Choose posting destination" Click="Button_Click_2"></Button>
+        <CheckBox Name="stemming" Grid.Row="6" Content="Stemming" HorizontalAlignment="Center" FontSize="15"></CheckBox>
+        <Grid Grid.Row="6" Grid.Column="1" Visibility="Hidden" Name="langGrid">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Language" HorizontalAlignment="Center"></TextBlock>
+            <ComboBox Name="language" Grid.Column="1" Margin="0 0 10 10" Height="27" VerticalAlignment="Bottom" ItemsSource="{Binding VM_LangDict}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Foreground="DarkRed" Text="{Binding Path=Key}"></TextBlock>
+                        </StackPanel>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </Grid>
+        <Grid Grid.Row="9" Grid.ColumnSpan="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Button Name="resetBtn" IsEnabled="False" Content="Reset" Click="Button_Click_1" Height="37" VerticalAlignment="Bottom"></Button>
+            <Button Content="Load dictionary" Grid.Column="1" Click="Button_Click_4"></Button>
+            <Button Content="Show terms Dictionary" Grid.Column="2" IsEnabled="False" Name="showBtn" Click="showBtn_Click"></Button>
+        </Grid>
+        <Button Content="Build Index" Grid.Row="7" Grid.ColumnSpan="2" Grid.RowSpan="2" Click="Button_Click_3"></Button>
+    </Grid>
+</Window>
