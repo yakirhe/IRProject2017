@@ -13,8 +13,8 @@ namespace IRProject.Model
     class Ranker
     {
         private const double k1 = 1.2;
-        private const double b = 0.75;
-        private const double alpha = 0.5;
+        private const double b = 0;
+        private const double alpha = 0.001;
         private Dictionary<string, docInfo> docsInfoDict;//key=docId, value = docInfo
         private Dictionary<string, long> termPointerDict;//key=term, value = pointer
         private Dictionary<string, double> docsRating;//key=docId,value=rating
@@ -25,16 +25,14 @@ namespace IRProject.Model
         private double avgDocLength;
         private const double R = 0;
         private const double r = 0;
-        private BinaryReader br;
         private const double k2 = 100;
         private const char SEPERATOR = 'έ';
-        private int df, tf, counter = 0;
+        private int df, tf;
         private WordNetEngine wn;
         string pathToSynonameDict;
 
         public Ranker()
         {
-
             pathToSynonameDict = @"..\..\..\wordsDb";
             wn = new WordNetEngine(pathToSynonameDict, false);
             //read the docs info dictionary drom the disk
@@ -116,6 +114,7 @@ namespace IRProject.Model
                     {
                         string docId = br.ReadString().Trim();
                         string docInfo = br.ReadString();
+                        docInfo di = new Model.docInfo(docInfo);
                         docsInfoDict[docId] = new docInfo(docInfo);
                         docLengthSum += docsInfoDict[docId].DocLength;
                     }
@@ -128,8 +127,9 @@ namespace IRProject.Model
         /// gets called from the Searcher class and calculate for each document it's BM25 and LSI
         /// </summary>
         /// <param name="query"></param>
-        public void calculateRelevance(string query)
+        public List<string> calculateRelevance(string query, string languages)
         {
+            List<string> languagesList = languages.Split(' ').ToList();
             docsRating = new Dictionary<string, double>();
             #region calculateBM25 for the query
             //take all the relevant docs (docs that at least 1 query word appears in it)
@@ -150,8 +150,61 @@ namespace IRProject.Model
             }
             #endregion
             //sort the docs rating dictionary
-            var sortedDict = from entry in docsRating orderby entry.Value ascending select entry;
+            var sortedDict = from entry in docsRating orderby entry.Value descending select entry;
             docsRating = sortedDict.ToDictionary(pair => pair.Key, pair => pair.Value);
+            List<string> top50 = getTop50(languagesList);
+            writeResults(top50);
+            return top50;
+        }
+
+        private void writeResults(List<string> top50)
+        {
+            int counter = 1;
+            using (Stream s = new FileStream("results.txt", FileMode.Create))
+            {
+                using (StreamWriter sw = new StreamWriter(s))
+                {
+                    foreach (string docId in top50)
+                    {
+                        string line = "11 0 " + docId + " " + (counter++) + " " + docsRating[docId] + " mt";
+                        sw.WriteLine(line);
+                    }
+                }
+            }
+        }
+            
+
+        private List<string> getTop50(List<string> languages)
+        {
+            bool checkLang = true;
+            if (languages.Count == 0)
+            {
+                checkLang = false;
+            }
+            List<string> docsToReturn = new List<string>();
+            int counter = 0;
+            foreach (string docId in docsRating.Keys)
+            {
+                if (counter > 50)
+                {
+                    break; ;
+                }
+                if (checkLang && languages.Contains(docsInfoDict[docId].Langauge))
+                {
+                    docsToReturn.Add(docId);
+                    counter++;
+                }
+                else if (!checkLang)
+                {
+                    docsToReturn.Add(docId);
+                    counter++;
+                }
+            }
+            if (docsToReturn.Count == 0)
+            {
+                docsToReturn.Add("No results found");
+            }
+            return docsToReturn;
         }
 
         private double calculateWeightRating(string query, string docId)
@@ -210,7 +263,7 @@ namespace IRProject.Model
                 {
                     foreach (string synoname in synSet.Words)
                     {
-                        if (synoname != wordInQuery)
+                        if (synoname != wordInQuery && synoname.IndexOf('_') == -1)
                         {
                             newQuery += synoname + " ";
                         }

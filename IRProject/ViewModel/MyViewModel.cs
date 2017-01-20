@@ -45,9 +45,9 @@ namespace IRProject.ViewModel
         /// </summary>
         /// <param name="text"></param>
         /// <param name="v"></param>
-        public void searchQuery(string query, string language)
+        public List<string> searchQuery(string query, string language)
         {
-            model.searchQuery(query, language);
+            return model.searchQuery(query, language);
         }
 
         /// <summary>

@@ -28,12 +28,20 @@
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
                 <TextBlock Text="Language" FontSize="15" VerticalAlignment="Center" HorizontalAlignment="Center"></TextBlock>
-                <ComboBox Grid.Row="1"></ComboBox>
+                <ListBox Name="langCB" Grid.Row="1" SelectionMode="Multiple" Margin="0,0,0,-160"></ListBox>
             </Grid>
-            <TextBox Name="queryTb" PreviewKeyDown="queryTb_PreviewKeyDown"></TextBox>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"></RowDefinition>
+                    <RowDefinition Height="*"></RowDefinition>
+                </Grid.RowDefinitions>
+                <TextBox Name="queryTb" PreviewKeyDown="queryTb_PreviewKeyDown"></TextBox>
+                <ComboBox Grid.Row="1" Visibility="Hidden" Name="suggestionBox" SelectionChanged="suggestionBox_SelectionChanged"></ComboBox>
+            </Grid>
             <Button Name="searchBtn" Content="Search" Grid.Column="2" Height="52" VerticalAlignment="Top" Click="searchBtn_Click"></Button>
             <Button Name="loadQueryBtn" Content="Load queries" Grid.Column="3"></Button>
         </Grid>
+        <ListView Name="resultsLV" Grid.Row="2" Margin="0,0,510,0"></ListView>
         <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="7*"></ColumnDefinition>

@@ -44,13 +44,13 @@ namespace IRProject.Model
             buildDictionary(stopWordsArray);
         }
 
-        public void searchQuery(string query, string language, Ranker ranker)
+        public List<string> searchQuery(string query, string language, Ranker ranker)
         {
             parseQuery = new Parse(stopWordsDict);
             this.query = parseQuery.parseQueryFunc(query);
             this.language = language;
             this.ranker = ranker;
-            getTop50();
+            return getTop50();
         }
 
         /// <summary>
@@ -70,9 +70,9 @@ namespace IRProject.Model
         /// <summary>
         /// Gets the top 50 most relevant document
         /// </summary>
-        private void getTop50()
+        private List<string> getTop50()
         {
-            ranker.calculateRelevance(query);
+            return ranker.calculateRelevance(query,language);
         }
     }
 }
