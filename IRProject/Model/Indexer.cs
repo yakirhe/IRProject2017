@@ -39,9 +39,9 @@ namespace IRProject.Model
         private MyModel model;
         private bool stemming;
         private static ConcurrentDictionary<string, int> langDict = new ConcurrentDictionary<string, int>();
-        private static ConcurrentDictionary<string, List<string>> autoCompleteDict = new ConcurrentDictionary<string, List<string>>();
+        private static Dictionary<string, string> autoCompleteDict = new Dictionary<string, string>();
         private bool firstTime = true;//write the auto complete file to the disk
-        private Dictionary<string, long> autoCompletePointers = new Dictionary<string, long>();
+        private Dictionary<string, long> autoCompletePointers;
         #endregion
 
         #region propfull
@@ -184,10 +184,8 @@ namespace IRProject.Model
             if (firstTime)
             {
                 firstTime = false;
-                fiveMostCommon();
                 writeAutoComToDisk();
                 writeAutoComPointerToDisk();
-
             }
             //read k files and merge them to 1
             ////1. get the total number of post files
@@ -253,6 +251,7 @@ namespace IRProject.Model
 
         private void writeAutoComToDisk()
         {
+            autoCompletePointers = new Dictionary<string, long>();
             int num = 0;
             using (Stream s = new FileStream("autoComplete.txt", FileMode.Create))
             {
@@ -260,14 +259,16 @@ namespace IRProject.Model
                 {
                     foreach (string term in autoCompleteDict.Keys)
                     {
+                        List<string> list = autoCompleteDict[term].Split(' ').ToList();
+                        list = fiveMostCommon(list);
                         autoCompletePointers[term] = bw.BaseStream.Position;
-                        if (autoCompleteDict[term] == null)
+                        if (list == null)
                         {
                             num = 0;
                         }
-                        if (autoCompleteDict[term].Count < 5)
+                        if (list.Count < 5)
                         {
-                            num = autoCompleteDict[term].Count;
+                            num = list.Count;
                         }
                         else
                         {
@@ -277,28 +278,20 @@ namespace IRProject.Model
                         bw.Write(num);
                         for (int i = 0; i < num; i++)
                         {
-                            if (term == "israel")
-                            {
-
-                            }
-                            string r = autoCompleteDict[term][i];
-                            bw.Write(autoCompleteDict[term][i]);
+                            bw.Write(list[i]);
                         }
                     }
                 }
             }
         }
 
-        private void fiveMostCommon()
+        private List<string> fiveMostCommon(List<string> list)
         {
+            var most = list.GroupBy(i => i).OrderByDescending(grp => grp.Count())
+      .Select(grp => grp.Key);
+            return most.ToList();
 
-            foreach (string term in autoCompleteDict.Keys)
-            {
-                var most = autoCompleteDict[term].GroupBy(i => i).OrderByDescending(grp => grp.Count())
-          .Select(grp => grp.Key);
-                autoCompleteDict[term] = most.ToList();
 
-            }
         }
 
         //private void writeDocsDictToFile(string postingFolder)
@@ -678,9 +671,12 @@ namespace IRProject.Model
                 {
                     if (!autoCompleteDict.ContainsKey(term))
                     {
-                        autoCompleteDict[term] = new List<string>();
+                        autoCompleteDict[term] = filteredTokenes[i + 1] + " ";
                     }
-                    autoCompleteDict[term].Add(filteredTokenes[i + 1]);
+                    else
+                    {
+                        autoCompleteDict[term] += filteredTokenes[i + 1] + " ";
+                    }
                 }
                 //check each token if it exist in the dictionary
                 //if not add it

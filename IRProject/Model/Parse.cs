@@ -19,7 +19,7 @@ namespace IRProject.Model
         string docNum;//contain the number of the doc
         Dictionary<string, string> stopWordsDic;//contain the stop words
         static Dictionary<string, string> monthsDic;//contain the name of each month
-        List<string> filteredTokenes;//contain all the terms after the rules
+        List<string> filteredTokenes = new List<string>();//contain all the terms after the rules
         string[] unfilteredTerms;//contain all the terms before the rules
         char[] filteredSigns = { ',', ':', '(', ')', '[', ']', '{', '}', '\'', '\"', '*', '#', '-', '&', '.', '|', '?', '!', '@', '^', ';', '`', '~' };//use for clear this characters from the terms
         Stemmer stemmer;
@@ -773,7 +773,7 @@ namespace IRProject.Model
             //and check if we need to write to the disk
             this.docNum = docNum;
             this.docText = docText;
-            filteredTokenes = new List<string>();
+            filteredTokenes.Clear();
             //init the token list
             //extract the tokens from the textcdfd
             return tokenize(fileTermsDict);

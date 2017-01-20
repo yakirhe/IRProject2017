@@ -19,11 +19,11 @@ namespace IRProject.Model
     class ReadFile : MyModel
     {
         #region fields
+        HtmlAgilityPack.HtmlDocument fileDoc;
         private string path;
         private ConcurrentQueue<string> fileNames;//contain all the names of files in the corpus
         private const int WORKING_THREADS = 8, COMP_THREADS = 8;
         private Dictionary<string, string> stopWordsDic = new Dictionary<string, string>();//contain all the stop words from the file that we get from the user
-        private ConcurrentQueue<Parse> parseQueue;//parse objects that use for each thread
         private Dictionary<string, Dictionary<string, TermInfo>> docsIndex;
         private Dictionary<string, long> finalTermDict;//final posting
         static Mutex m = new Mutex();
@@ -32,7 +32,8 @@ namespace IRProject.Model
         private string stopWordsFileName;
         private MyModel model;
         private bool stemming;
-        Parse p;
+        private Dictionary<string, TermInfo> fileTermsDict;
+        private HtmlNode[] docNodes;
         #endregion
 
         #region propfull
@@ -78,7 +79,6 @@ namespace IRProject.Model
             //2.1 clear the posting folder
             clearPostingFolder();
             //init the queue parse
-            initQueueParse();
             //3.create a queue of the file names
             fileNames = new ConcurrentQueue<string>();
             foreach (string file in Directory.GetFiles(path))
@@ -125,19 +125,6 @@ namespace IRProject.Model
 
         #endregion
 
-        /// <summary>
-        /// this function init the queue parse
-        /// the queue use for each thread take a parse object
-        /// </summary>
-        private void initQueueParse()
-        {
-            parseQueue = new ConcurrentQueue<Parse>();
-            for (int i = 0; i < WORKING_THREADS; i++)
-            {
-                Parse p = new Parse(stopWordsDic);
-                parseQueue.Enqueue(p);
-            }
-        }
 
         /// <summary>
         /// read the stop words from a file and build a list of stop words from it
@@ -187,8 +174,10 @@ namespace IRProject.Model
         /// <param name="fileNames">queue with file names for seperate</param>
         private void splitDocsThreadPool(ConcurrentQueue<string> fileNames)
         {
+            fileDoc = new HtmlAgilityPack.HtmlDocument();
             int totalFiles = fileNames.Count;
             docsIndex = new Dictionary<string, Dictionary<string, TermInfo>>();
+            fileTermsDict = new Dictionary<string, TermInfo>();
             //CountdownEvent threadBarrier = new CountdownEvent(fileNames.Count);
             for (int i = 0; i < totalFiles; i++)
             {
@@ -219,12 +208,12 @@ namespace IRProject.Model
         /// <param name="fileName">file name</param>
         private void splitFile(string fileName)
         {
-            HtmlAgilityPack.HtmlDocument fileDoc = new HtmlAgilityPack.HtmlDocument();
-            Dictionary<string, TermInfo> fileTermsDict = new Dictionary<string, TermInfo>();
             //load the html from the file
             fileDoc.Load(fileName);
+            fileTermsDict.Clear();
             //split the file to docs and store them in docNodes
-            HtmlNode[] docNodes = fileDoc.DocumentNode.SelectNodes("//doc").ToArray();
+            docNodes = fileDoc.DocumentNode.SelectNodes("//doc").ToArray();
+            Parse p = new Parse(stopWordsDic);
             foreach (HtmlNode docNode in docNodes) //iterate on the docs
             {
                 //get the doc tag name
@@ -234,9 +223,7 @@ namespace IRProject.Model
                 string docText = docNode.SelectNodes(".//text").First().InnerText;
                 //send to the parser
                 //Check if there is an available Parse in the queue
-                while (!parseQueue.TryDequeue(out p))
-                {
-                };
+
                 //use Parser p to parse the doc
                 if (!docsIndex.ContainsKey(fileName)) //first time
                 {
@@ -250,7 +237,6 @@ namespace IRProject.Model
                 //merge the dictionary
                 //mergeDicts(fileName, fileTermsDict);
                 //enter to the queue the parser that we used
-                parseQueue.Enqueue(p);
             }
             //Indexer ind = new Indexer();
             //ind.writePostingToFile(docsIndex[fileName], postingFolder, stemming);
