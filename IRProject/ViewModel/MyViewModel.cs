@@ -35,6 +35,11 @@ namespace IRProject.ViewModel
             };
         }
 
+        public Dictionary<string, long> getAutoComPointersDict()
+        {
+            return model.getAutoComPointersDict();
+        }
+
         /// <summary>
         /// send to the model the quert that we want ro search
         /// </summary>
@@ -56,6 +61,11 @@ namespace IRProject.ViewModel
                 termFreqDict = value;
                 notifyPropertyChanged("VM_TermFreqDict");
             }
+        }
+
+        public List<string> autocomplete(long termPointer)
+        {
+            return model.autoComplete(termPointer);
         }
 
         /// <summary>

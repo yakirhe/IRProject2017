@@ -18,11 +18,11 @@ namespace IRProject.Model
     {
         #region class members
         private List<string> filteredTokenes;
-        private Dictionary<string, TermInfo> termsDict; //key = term, value = docId-termFr*
-        private Dictionary<string, long> m_finalTermDict;//key = term, value = pointer to the posting
-        private Dictionary<string, int> termFreqDict; //this is the dictionary that we use for the final display in the GUI
-        private Dictionary<string, int> singleDocTermsDict;
-        private static ConcurrentDictionary<string, docInfo> docsDict = new ConcurrentDictionary<string, docInfo>();
+        public static Dictionary<string, TermInfo> termsDict = new Dictionary<string, TermInfo>(); //key = term, value = docId-termFr*
+        //private Dictionary<string, long> m_finalTermDict;//key = term, value = pointer to the posting
+        //private Dictionary<string, int> termFreqDict; //this is the dictionary that we use for the final display in the GUI
+        //private Dictionary<string, int> singleDocTermsDict;
+        //private static ConcurrentDictionary<string, docInfo> docsDict = new ConcurrentDictionary<string, docInfo>();
         private int totalWords = 0;
         private static int numOfDocs = 0;
         private static int numOfTerms = 0;
@@ -39,14 +39,17 @@ namespace IRProject.Model
         private MyModel model;
         private bool stemming;
         private static ConcurrentDictionary<string, int> langDict = new ConcurrentDictionary<string, int>();
+        private static ConcurrentDictionary<string, List<string>> autoCompleteDict = new ConcurrentDictionary<string, List<string>>();
+        private bool firstTime = true;//write the auto complete file to the disk
+        private Dictionary<string, long> autoCompletePointers = new Dictionary<string, long>();
         #endregion
 
         #region propfull
-        public Dictionary<string, long> finalTermDict
-        {
-            get { return m_finalTermDict; }
-            set { m_finalTermDict = value; }
-        }
+        //public Dictionary<string, long> finalTermDict
+        //{
+        //    get { return m_finalTermDict; }
+        //    set { m_finalTermDict = value; }
+        //}
 
         public ConcurrentDictionary<string, int> LangDict
         {
@@ -60,11 +63,11 @@ namespace IRProject.Model
             set { languages = value; }
         }
 
-        public Dictionary<string, int> TermFreqDict
-        {
-            get { return termFreqDict; }
-            set { termFreqDict = value; }
-        }
+        //public Dictionary<string, int> TermFreqDict
+        //{
+        //    get { return termFreqDict; }
+        //    set { termFreqDict = value; }
+        //}
 
         #endregion
 
@@ -76,7 +79,7 @@ namespace IRProject.Model
         public Indexer(MyModel model, bool stemming)
         {
             this.stemming = stemming;
-            termsDict = new Dictionary<string, TermInfo>();
+            //termsDict = new Dictionary<string, TermInfo>();
             this.model = model;
         }
 
@@ -86,7 +89,7 @@ namespace IRProject.Model
         /// <param name="termDict">info about the terms</param>
         public Indexer(Dictionary<string, TermInfo> termDict)
         {
-            this.termsDict = termDict;
+            //this.termsDict = termDict;
         }
 
         /// <summary>
@@ -94,7 +97,7 @@ namespace IRProject.Model
         /// </summary>
         public Indexer()
         {
-            termsDict = new Dictionary<string, TermInfo>();
+            //termsDict = new Dictionary<string, TermInfo>();
         }
 
 
@@ -109,7 +112,7 @@ namespace IRProject.Model
         public void writePostingToFile(Dictionary<string, TermInfo> termsDictFile, string postingFolder, bool stemming)
         {
             string fileName = "";
-            this.termsDict = termsDictFile;
+            //this.termsDict = termsDictFile;
             //sort the dictionary
             sortDictionary();
             m.WaitOne();
@@ -136,7 +139,7 @@ namespace IRProject.Model
         /// </summary>
         private void sortDictionary()
         {
-            sortedKeys = termsDict.Keys.ToList<string>();
+            //sortedKeys = termsDict.Keys.ToList<string>();
             sortedKeys.Sort();
         }
 
@@ -178,67 +181,140 @@ namespace IRProject.Model
         /// <param name="postingFolder">path to read the posting files</param>
         public void merge(string postingFolder)
         {
+            if (firstTime)
+            {
+                firstTime = false;
+                fiveMostCommon();
+                writeAutoComToDisk();
+                writeAutoComPointerToDisk();
+
+            }
             //read k files and merge them to 1
-            //1. get the total number of post files
-            if (!stemming)
-            {
-                filesToMerge = new ConcurrentQueue<string>(Directory.GetFiles(postingFolder).ToList());
-            }
-            else
-            {
-                filesToMerge = new ConcurrentQueue<string>(Directory.GetFiles(postingFolder + "\\Stemming").ToList());
-            }
-            int filesCount = filesToMerge.Count;
-            bool finished = false;
-            CountdownEvent barrier = new CountdownEvent(filesCount - 2);
-            for (int i = 0; i < filesCount - 2; i++)
-            {
-                string fileName1 = "", fileName2 = "";
-                //check if exist two files in the queue
-                //take 2 files from the queue
-                ThreadPool.SetMaxThreads(8, 8);
-                while (!filesToMerge.TryDequeue(out fileName1)) ;
-                while (!filesToMerge.TryDequeue(out fileName2)) ;
-                int counter = mergedCounter++;
-                ThreadPool.QueueUserWorkItem((merge) =>
-                {
-                    mergeFiles(fileName1, fileName2, counter, false, postingFolder);
-                    mergedFinished++;
-                    barrier.Signal();
-                });
-            }
-            barrier.Wait();
-            //perform the last merge and build the final terms dictionary
-            termFreqDict = new Dictionary<string, int>();
-            string fileNameStr1 = "", fileNameStr2 = "";
-            filesToMerge.TryDequeue(out fileNameStr1);
-            filesToMerge.TryDequeue(out fileNameStr2);
-            mergeFiles(fileNameStr1, fileNameStr2, 0, true, postingFolder);
-            model.TermFreqDict = termFreqDict;
-            model.LangDict = langDict;
-            buildLanguagesCollection();
-            model.Languages = languages;
-            //write the dictionary to file
-            writeDictionariesToFile(postingFolder);
-            numOfFiles = 1;
+            ////1. get the total number of post files
+            //if (!stemming)
+            //{
+            //    filesToMerge = new ConcurrentQueue<string>(Directory.GetFiles(postingFolder).ToList());
+            //}
+            //else
+            //{
+            //    filesToMerge = new ConcurrentQueue<string>(Directory.GetFiles(postingFolder + "\\Stemming").ToList());
+            //}
+            //int filesCount = filesToMerge.Count;
+            //bool finished = false;
+            //CountdownEvent barrier = new CountdownEvent(filesCount - 2);
+            //for (int i = 0; i < filesCount - 2; i++)
+            //{
+            //    string fileName1 = "", fileName2 = "";
+            //    //check if exist two files in the queue
+            //    //take 2 files from the queue
+            //    ThreadPool.SetMaxThreads(8, 8);
+            //    while (!filesToMerge.TryDequeue(out fileName1)) ;
+            //    while (!filesToMerge.TryDequeue(out fileName2)) ;
+            //    int counter = mergedCounter++;
+            //    ThreadPool.QueueUserWorkItem((merge) =>
+            //    {
+            //        mergeFiles(fileName1, fileName2, counter, false, postingFolder);
+            //        mergedFinished++;
+            //        barrier.Signal();
+            //    });
+            //}
+            //barrier.Wait();
+            ////perform the last merge and build the final terms dictionary
+            ////termFreqDict = new Dictionary<string, int>();
+            //string fileNameStr1 = "", fileNameStr2 = "";
+            //filesToMerge.TryDequeue(out fileNameStr1);
+            //filesToMerge.TryDequeue(out fileNameStr2);
+            //mergeFiles(fileNameStr1, fileNameStr2, 0, true, postingFolder);
+            ////model.TermFreqDict = termFreqDict;
+            //model.LangDict = langDict;
+            //buildLanguagesCollection();
+            //model.Languages = languages;
+            ////write the dictionary to file
+            //writeDictionariesToFile(postingFolder);
+            //numOfFiles = 1;
             //write the doc dictionary to file
-            writeDocsDictToFile(postingFolder);
+            //writeDocsDictToFile(postingFolder);
         }
 
-        private void writeDocsDictToFile(string postingFolder)
+        private void writeAutoComPointerToDisk()
         {
-            using (Stream s = new FileStream(postingFolder + "\\DocsDict.txt", FileMode.Create))
+            using (Stream s = new FileStream("autoCompletePointers.txt", FileMode.Create))
             {
-                using (BinaryWriter br = new BinaryWriter(s))
+                using (BinaryWriter bw = new BinaryWriter(s))
                 {
-                    foreach (string docId in docsDict.Keys)
+                    foreach (string term in autoCompletePointers.Keys)
                     {
-                        br.Write(docId);
-                        br.Write(docsDict[docId].ToString());
+                        bw.Write(term);
+                        bw.Write(autoCompletePointers[term]);
                     }
                 }
             }
         }
+
+        private void writeAutoComToDisk()
+        {
+            int num = 0;
+            using (Stream s = new FileStream("autoComplete.txt", FileMode.Create))
+            {
+                using (BinaryWriter bw = new BinaryWriter(s))
+                {
+                    foreach (string term in autoCompleteDict.Keys)
+                    {
+                        autoCompletePointers[term] = bw.BaseStream.Position;
+                        if (autoCompleteDict[term] == null)
+                        {
+                            num = 0;
+                        }
+                        if (autoCompleteDict[term].Count < 5)
+                        {
+                            num = autoCompleteDict[term].Count;
+                        }
+                        else
+                        {
+                            num = 5;
+                        }
+                        bw.Write(term);
+                        bw.Write(num);
+                        for (int i = 0; i < num; i++)
+                        {
+                            if (term == "israel")
+                            {
+
+                            }
+                            string r = autoCompleteDict[term][i];
+                            bw.Write(autoCompleteDict[term][i]);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void fiveMostCommon()
+        {
+
+            foreach (string term in autoCompleteDict.Keys)
+            {
+                var most = autoCompleteDict[term].GroupBy(i => i).OrderByDescending(grp => grp.Count())
+          .Select(grp => grp.Key);
+                autoCompleteDict[term] = most.ToList();
+
+            }
+        }
+
+        //private void writeDocsDictToFile(string postingFolder)
+        //{
+        //    using (Stream s = new FileStream(postingFolder + "\\DocsDict.txt", FileMode.Create))
+        //    {
+        //        using (BinaryWriter br = new BinaryWriter(s))
+        //        {
+        //            foreach (string docId in docsDict.Keys)
+        //            {
+        //                br.Write(docId);
+        //                br.Write(docsDict[docId].ToString());
+        //            }
+        //        }
+        //    }
+        //}
 
         /// <summary>
         /// this function add to the language dictionary 
@@ -271,18 +347,18 @@ namespace IRProject.Model
         /// <param name="postingFolder">path to write the dictionary</param>
         private void writeFinalTermsDictToFile(string postingFolder)
         {
-            using (Stream s = new FileStream(postingFolder + "//finalDict.txt", FileMode.Create))
-            {
-                using (BinaryWriter bw = new BinaryWriter(s))
-                {
-                    foreach (string term in m_finalTermDict.Keys)
-                    {
+            //using (Stream s = new FileStream(postingFolder + "//finalDict.txt", FileMode.Create))
+            //{
+            //    using (BinaryWriter bw = new BinaryWriter(s))
+            //    {
+            //        foreach (string term in m_finalTermDict.Keys)
+            //        {
 
-                        bw.Write(term);
-                        bw.Write(m_finalTermDict[term].ToString());
-                    }
-                }
-            }
+            //            bw.Write(term);
+            //            bw.Write(m_finalTermDict[term].ToString());
+            //        }
+            //    }
+            //}
         }
 
         /// <summary>
@@ -291,24 +367,18 @@ namespace IRProject.Model
         /// <param name="postingFolder">path to write the dictionary</param>
         private void writeTermFreqDictToFile(string postingFolder)
         {
-            using (Stream s = new FileStream(postingFolder + "//termFreqDict.txt", FileMode.Create))
-            {
-                using (BinaryWriter bw = new BinaryWriter(s))
-                {
-                    foreach (string term in termFreqDict.Keys)
-                    {
-                        string lineToWrite = term + SEPERATOR + termFreqDict[term].ToString();
-                        bw.Write(lineToWrite);
-                    }
-                }
-            }
+            //using (Stream s = new FileStream(postingFolder + "//termFreqDict.txt", FileMode.Create))
+            //{
+            //    using (BinaryWriter bw = new BinaryWriter(s))
+            //    {
+            //        foreach (string term in termFreqDict.Keys)
+            //        {
+            //            string lineToWrite = term + SEPERATOR + termFreqDict[term].ToString();
+            //            bw.Write(lineToWrite);
+            //        }
+            //    }
+            //}
         }
-
-
-
-
-
-
 
         /// <summary>
         /// this function iterate on the posting files and merge them to final posting
@@ -328,7 +398,7 @@ namespace IRProject.Model
             //open a new file to store the merge sort
             if (finalMerge)
             {
-                m_finalTermDict = new Dictionary<string, long>();
+                //m_finalTermDict = new Dictionary<string, long>();
                 mergedFileName = postingFolder + "/finalPosting.txt";
             }
             else
@@ -363,8 +433,8 @@ namespace IRProject.Model
                     //term1 is smaller than term2
                     if (finalMerge)
                     {
-                        m_finalTermDict[term1] = bw.BaseStream.Position;
-                        termFreqDict[term1] = getTf(lineFile1);
+                        //m_finalTermDict[term1] = bw.BaseStream.Position;
+                        //termFreqDict[term1] = getTf(lineFile1);
                     }
                     bw.Write(lineFile1);
                     increaseFile1 = true;
@@ -374,8 +444,8 @@ namespace IRProject.Model
                 {
                     if (finalMerge)
                     {
-                        m_finalTermDict[term1] = bw.BaseStream.Position;
-                        termFreqDict[term1] = getTf(lineFile1, lineFile2);
+                        //m_finalTermDict[term1] = bw.BaseStream.Position;
+                        //termFreqDict[term1] = getTf(lineFile1, lineFile2);
                     }
                     increaseFile1 = true;
                     increaseFile2 = true;
@@ -401,8 +471,8 @@ namespace IRProject.Model
                     //term2 is smaller than term1
                     if (finalMerge)
                     {
-                        m_finalTermDict[term2] = bw.BaseStream.Position;
-                        termFreqDict[term2] = getTf(lineFile2);
+                        // m_finalTermDict[term2] = bw.BaseStream.Position;
+                        //termFreqDict[term2] = getTf(lineFile2);
                     }
                     bw.Write(lineFile2);
                     increaseFile2 = true;
@@ -417,8 +487,8 @@ namespace IRProject.Model
                         term2 = lineFile2.Substring(0, lineFile2.IndexOf(SEPERATOR));
                         if (finalMerge)
                         {
-                            m_finalTermDict[term2] = bw.BaseStream.Position;
-                            termFreqDict[term2] = getTf(lineFile2);
+                            //  m_finalTermDict[term2] = bw.BaseStream.Position;
+                            // termFreqDict[term2] = getTf(lineFile2);
                         }
                         bw.Write(lineFile2);
                     }
@@ -432,8 +502,8 @@ namespace IRProject.Model
                         term1 = lineFile1.Substring(0, lineFile1.IndexOf(SEPERATOR));
                         if (finalMerge)
                         {
-                            m_finalTermDict[term1] = bw.BaseStream.Position;
-                            termFreqDict[term1] = getTf(lineFile1);
+                            //m_finalTermDict[term1] = bw.BaseStream.Position;
+                            //termFreqDict[term1] = getTf(lineFile1);
                         }
                         bw.Write(lineFile1);
                     }
@@ -502,7 +572,7 @@ namespace IRProject.Model
         /// <returns></returns>
         public Dictionary<string, TermInfo> buildIndexDictionary(List<string> filteredTokenes, string docId, string docLang, bool stemming)
         {
-            singleDocTermsDict = new Dictionary<string, int>();
+            //singleDocTermsDict = new Dictionary<string, int>();
             this.stemming = stemming;
             this.docId = docId;
             this.docLang = docLang;
@@ -514,7 +584,24 @@ namespace IRProject.Model
             numOfDocs++;
             checkLangDict(docLang);
             addToDocsDict();
+            writeDocsTermsToFile(docId);
             return termsDict;
+        }
+
+        private void writeDocsTermsToFile(string docId)
+        {
+            //Directory.CreateDirectory("docsTerms");
+            //using (Stream s = new FileStream(@"docsTerms/" + docId + ".txt", FileMode.Create))
+            //{
+            //    using (BinaryWriter bw = new BinaryWriter(s))
+            //    {
+            //        foreach (string term in singleDocTermsDict.Keys)
+            //        {
+            //            bw.Write(term);
+            //            bw.Write(singleDocTermsDict[term]);
+            //        }
+            //    }
+            //}
         }
 
         /// <summary>
@@ -543,18 +630,18 @@ namespace IRProject.Model
         /// </summary>
         private void addToDocsDict()
         {
-            int max = 0;
-            string maxTerm = "";
-            foreach (string term in singleDocTermsDict.Keys)
-            {
-                if (singleDocTermsDict[term] > max)
-                {
-                    maxTerm = term;
-                    max = singleDocTermsDict[term];
-                }
-            }
-            docInfo dInfo = new docInfo(maxTerm, max, docLang, singleDocTermsDict.Count, filteredTokenes.Count);
-            docsDict[docId] = dInfo;
+            //int max = 0;
+            //string maxTerm = "";
+            //foreach (string term in singleDocTermsDict.Keys)
+            //{
+            //    if (singleDocTermsDict[term] > max)
+            //    {
+            //        maxTerm = term;
+            //        max = singleDocTermsDict[term];
+            //    }
+            //}
+            //docInfo dInfo = new docInfo(maxTerm, max, docLang, singleDocTermsDict.Count, filteredTokenes.Count);
+            //docsDict[docId] = dInfo;
         }
 
         private void writeToFile(string fileName, string postingFolder)
@@ -568,7 +655,7 @@ namespace IRProject.Model
                     string lineToWrite = "";
                     foreach (string term in sortedKeys)
                     {
-                        lineToWrite = term + SEPERATOR + termsDict[term].ToString() + "\n";
+                        //lineToWrite = term + SEPERATOR + termsDict[term].ToString() + "\n";
                         //write to disk
                         sw.Write(lineToWrite);
                     }
@@ -586,24 +673,33 @@ namespace IRProject.Model
             int i = 0;
             foreach (string term in filteredTokenes)
             {
+                //build the auto complete dictionary
+                if (i + 1 < filteredTokenes.Count)
+                {
+                    if (!autoCompleteDict.ContainsKey(term))
+                    {
+                        autoCompleteDict[term] = new List<string>();
+                    }
+                    autoCompleteDict[term].Add(filteredTokenes[i + 1]);
+                }
                 //check each token if it exist in the dictionary
                 //if not add it
-                if (!termsDict.ContainsKey(term))
-                {
-                    termsDict[term] = new TermInfo(docId, i);
-                }
-                else//if it exist we will increase the term frequency by one 
-                {
-                    termsDict[term].addTermInstance(docId, i);
-                }
-                if (!singleDocTermsDict.ContainsKey(term))
-                {
-                    singleDocTermsDict[term] = 1;
-                }
-                else
-                {
-                    singleDocTermsDict[term]++;
-                }
+                //if (!termsDict.ContainsKey(term))
+                //{
+                //    termsDict[term] = new TermInfo(docId, i);
+                //}
+                //else//if it exist we will increase the term frequency by one 
+                //{
+                //    termsDict[term].addTermInstance(docId, i);
+                //}
+                //if (!singleDocTermsDict.ContainsKey(term))
+                //{
+                //    singleDocTermsDict[term] = 1;
+                //}
+                //else
+                //{
+                //    singleDocTermsDict[term]++;
+                //}
                 i++;
             }
         }

@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Nml;
+using LAIR.ResourceAPIs.WordNet;
+using LAIR.Collections.Generic;
 
 namespace IRProject.Model
 {
@@ -12,25 +14,44 @@ namespace IRProject.Model
     {
         private const double k1 = 1.2;
         private const double b = 0.75;
+        private const double alpha = 0.5;
         private Dictionary<string, docInfo> docsInfoDict;//key=docId, value = docInfo
         private Dictionary<string, long> termPointerDict;//key=term, value = pointer
         private Dictionary<string, double> docsRating;//key=docId,value=rating
         private Dictionary<string, TermInfo> queryTermInfoDict; //key=query word, value = TermInfo
+        private Dictionary<string, int> termsDoc = new Dictionary<string, int>();//for one doc- key term,value-termFreq in doc
+        private Dictionary<string, double> docsWeightResult;
         List<string> relevantDocs = new List<string>();//contain the relevant docs
         private double avgDocLength;
         private const double R = 0;
         private const double r = 0;
+        private BinaryReader br;
         private const double k2 = 100;
         private const char SEPERATOR = 'έ';
-        private int df, tf;
-        private int n;
+        private int df, tf, counter = 0;
+        private WordNetEngine wn;
+        string pathToSynonameDict;
 
         public Ranker()
         {
-            docsInfoDict = new Dictionary<string, docInfo>();
+
+            pathToSynonameDict = @"..\..\..\wordsDb";
+            wn = new WordNetEngine(pathToSynonameDict, false);
             //read the docs info dictionary drom the disk
-            readDocInfo();
+            initializeDict();
             readTermPointerDict();
+            readDocInfo();
+        }
+
+        /// <summary>
+        /// All this function does is to initialize the dictionaries
+        /// </summary>
+        private void initializeDict()
+        {
+            termPointerDict = new Dictionary<string, long>();
+            docsRating = new Dictionary<string, double>();
+            queryTermInfoDict = new Dictionary<string, TermInfo>();
+            docsWeightResult = new Dictionary<string, double>();
         }
 
         private void buildQueryTermInfoDict(string query)
@@ -46,16 +67,21 @@ namespace IRProject.Model
                         {
                             continue;
                         }
-                        long positionToRead = termPointerDict[word];
-                        br.BaseStream.Seek(positionToRead, SeekOrigin.Begin);
-                        //get the term info
-                        string termInfoStr = br.ReadString();
-                        termInfoStr = termInfoStr.Substring(termInfoStr.IndexOf(SEPERATOR));
-                        TermInfo termInfo = new TermInfo(termInfoStr);
-                        queryTermInfoDict[word] = termInfo;
+                        queryTermInfoDict[word] = getPostingLine(br, word);
                     }
                 }
             }
+        }
+
+        private TermInfo getPostingLine(BinaryReader br, string word)
+        {
+            long positionToRead = termPointerDict[word];
+            br.BaseStream.Seek(positionToRead, SeekOrigin.Begin);
+            //get the term info
+            string termInfoStr = br.ReadString();
+            termInfoStr = termInfoStr.Substring(termInfoStr.IndexOf(SEPERATOR));
+            TermInfo termInfo = new TermInfo(termInfoStr);
+            return termInfo;
         }
 
         private void readTermPointerDict()
@@ -80,6 +106,7 @@ namespace IRProject.Model
         /// </summary>
         private void readDocInfo()
         {
+            docsInfoDict = new Dictionary<string, docInfo>();
             int docLengthSum = 0;
             using (Stream s = new FileStream("Files//DocsDict.txt", FileMode.Open))
             {
@@ -87,7 +114,7 @@ namespace IRProject.Model
                 {
                     while (br.BaseStream.Position != br.BaseStream.Length)
                     {
-                        string docId = br.ReadString();
+                        string docId = br.ReadString().Trim();
                         string docInfo = br.ReadString();
                         docsInfoDict[docId] = new docInfo(docInfo);
                         docLengthSum += docsInfoDict[docId].DocLength;
@@ -104,13 +131,62 @@ namespace IRProject.Model
         public void calculateRelevance(string query)
         {
             docsRating = new Dictionary<string, double>();
+            #region calculateBM25 for the query
+            //take all the relevant docs (docs that at least 1 query word appears in it)
             buildQueryTermInfoDict(query);
             createUnionListOfRelDocs();
             foreach (string docId in relevantDocs)
             {
-                docsRating[docId] = calculateBM25(query, docId);
+                docsRating[docId] = alpha * calculateBM25(query, docId);
             }
-            //string expandedQuery = expandQuery(query);
+            #endregion
+            #region calculateWeight (tf*idf) for the expanded query
+            string expandedQuery = expandQuery(query);
+            //take all the relevant docs of the expanded query (docs that at least 1 query word appears in it)
+            buildQueryTermInfoDict(expandedQuery);
+            foreach (string docId in relevantDocs)
+            {
+                docsRating[docId] = docsRating[docId] + (1 - alpha) * calculateWeightRating(expandedQuery, docId);
+            }
+            #endregion
+            //sort the docs rating dictionary
+            var sortedDict = from entry in docsRating orderby entry.Value ascending select entry;
+            docsRating = sortedDict.ToDictionary(pair => pair.Key, pair => pair.Value);
+        }
+
+        private double calculateWeightRating(string query, string docId)
+        {
+            double numerator = 0;
+            foreach (string word in query.Split(' '))
+            {
+                double numeratorLeft = getWeightedDocValue(docId, word, false);
+                double queryWeight = wordFreqInQueryFunc(word, query);
+                numerator += numeratorLeft * queryWeight;
+            }
+            if (numerator == 0)
+                return 0;
+            return numerator;
+        }
+
+        /// <summary>
+        /// calculate tf*idf
+        /// W = tf*idf
+        /// idf= log2(N/df)
+        /// tf= f/maxf
+        /// </summary>
+        /// <param name="docId"></param>
+        /// <param name="word"></param>
+        /// <returns></returns>
+        private double getWeightedDocValue(string docId, string word, bool goToPosting)
+        {
+            getTermFreqDoc(docId, word);
+            if (df == 0)
+            {
+                return 0;
+            }
+            double idf = Math.Log((double)docsInfoDict.Count / (double)df);
+            double tfNormal = (double)tf / (double)docsInfoDict[docId].Max;
+            return idf * tfNormal;
         }
 
         /// <summary>
@@ -118,10 +194,31 @@ namespace IRProject.Model
         /// </summary>
         /// <param name="query"></param>
         /// <returns></returns>
-        // private string expandQuery(string query)
-        //{
-
-        //}
+        private string expandQuery(string query)
+        {
+            string newQuery = "";
+            //seperate the query to words
+            string[] queryWords = query.Split(' ');
+            foreach (string wordInQuery in queryWords)
+            {
+                Set<SynSet> synSets = wn.GetSynSets(wordInQuery, WordNetEngine.POS.Noun);
+                Set<SynSet> synSetsAdj = wn.GetSynSets(wordInQuery, WordNetEngine.POS.Adjective);
+                Set<SynSet> synSetsVerb = wn.GetSynSets(wordInQuery, WordNetEngine.POS.Verb);
+                Set<SynSet> synSetsAdverb = wn.GetSynSets(wordInQuery, WordNetEngine.POS.Adverb);
+                synSets = new Set<SynSet>(synSets.Union(synSetsAdj).Union(synSetsVerb).Union(synSetsAdverb).ToList());
+                foreach (SynSet synSet in synSets)
+                {
+                    foreach (string synoname in synSet.Words)
+                    {
+                        if (synoname != wordInQuery)
+                        {
+                            newQuery += synoname + " ";
+                        }
+                    }
+                }
+            }
+            return newQuery;
+        }
 
         /// <summary>
         /// create union list of all relevents docs for the query 
@@ -138,7 +235,7 @@ namespace IRProject.Model
         public double calculateBM25(string query, string docNum)
         {
             //get the doc length
-            int docLength = docsInfoDict.Count;
+            int docLength = docsInfoDict[docNum].DocLength;
             double k = calculateK(docLength);
             double sum = 0;
             foreach (string word in query.Split(' '))
@@ -146,7 +243,7 @@ namespace IRProject.Model
                 int wordFreqInQuery = wordFreqInQueryFunc(word, query);
                 getTermFreqDoc(docNum, word);
                 double numerator = ((r + 0.5) / (R - r + 0.5)) * (k1 + 1) * tf * (k2 + 1) * wordFreqInQuery;
-                double denominator = (df - r + 0.5) / (docsInfoDict.Count - n - R + r + 0.5) * (k + tf) * (k2 + wordFreqInQuery);
+                double denominator = (df - r + 0.5) / (docsInfoDict.Count - df - R + r + 0.5) * (k + tf) * (k2 + wordFreqInQuery);
                 if (numerator == 0)
                 {
                     continue;
@@ -188,6 +285,23 @@ namespace IRProject.Model
                 return;
             }
             tf = queryTermInfoDict[word].DocTermsDict[docNum].TermFreq;
+        }
+
+
+        private void loadTermsFreqDocToDict(string docNum)
+        {
+            string test = "docsTerms/ " + docNum + " .txt";
+            using (Stream s = new FileStream(test, FileMode.Open))
+            {
+                using (BinaryReader br = new BinaryReader(s))
+                {
+                    while (br.BaseStream.Position != br.BaseStream.Length)
+                    {
+                        string term = br.ReadString();
+                        termsDoc[term] = br.ReadInt32();
+                    }
+                }
+            }
         }
 
         /// <summary>

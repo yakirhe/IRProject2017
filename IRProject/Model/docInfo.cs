@@ -20,7 +20,6 @@ namespace IRProject.Model
             set { docLength = value; }
         }
 
-
         private string lang;
 
         public string Langauge

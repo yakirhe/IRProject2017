@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using LAIR.ResourceAPIs.WordNet;
 
 namespace IRProject.Model
 {
@@ -22,11 +23,12 @@ namespace IRProject.Model
         private Dictionary<string, int> termFreqDict;
         private ConcurrentDictionary<string, int> langDict;
         static ReadFile rf;
-        static Indexer indexer;
+        //static Indexer indexer;
         private const char SEPERATOR = 'έ';
         private ObservableCollection<string> languages;
         Searcher searcher;
         Ranker ranker;
+        private Dictionary<string, long> autoCompletePointersDict = new Dictionary<string, long>();
 
         #endregion
 
@@ -36,6 +38,43 @@ namespace IRProject.Model
         public MyModel()
         {
             ranker = new Ranker();
+            searcher = new Searcher();
+        }
+
+        public Dictionary<string, long> getAutoComPointersDict()
+        {
+            //read the auto complete pointer dictionary from the disk
+            using (Stream s = new FileStream(@"Files/autoCompletePointers.txt", FileMode.Open))
+            {
+                using (BinaryReader br = new BinaryReader(s))
+                {
+                    while (br.BaseStream.Position != br.BaseStream.Length)
+                    {
+                        string term = br.ReadString();
+                        autoCompletePointersDict[term] = br.ReadInt64();
+                    }
+                }
+            }
+            return autoCompletePointersDict;
+        }
+
+        public List<string> autoComplete(long termPointer)
+        {
+            List<string> autoCompleteList = new List<string>();
+            using (Stream s = new FileStream(@"Files/autoComplete.txt", FileMode.Open))
+            {
+                using (BinaryReader br = new BinaryReader(s))
+                {
+                    br.BaseStream.Seek(termPointer, SeekOrigin.Begin);
+                    br.ReadString();
+                    int numOfItems = br.ReadInt32();
+                    for (int i = 0; i < numOfItems; i++)
+                    {
+                        autoCompleteList.Add(br.ReadString());
+                    }
+                }
+            }
+            return autoCompleteList;
         }
 
         /// <summary>
@@ -53,7 +92,7 @@ namespace IRProject.Model
 
         public void searchQuery(string query, string language)
         {
-            searcher = new Searcher(query, language, ranker);
+            searcher.searchQuery(query, language, ranker);
         }
 
         /// <summary>

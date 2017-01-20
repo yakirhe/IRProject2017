@@ -24,7 +24,7 @@ namespace IRProject.Model
         private const int WORKING_THREADS = 8, COMP_THREADS = 8;
         private Dictionary<string, string> stopWordsDic = new Dictionary<string, string>();//contain all the stop words from the file that we get from the user
         private ConcurrentQueue<Parse> parseQueue;//parse objects that use for each thread
-        private ConcurrentDictionary<string, Dictionary<string, TermInfo>> docsIndex;
+        private Dictionary<string, Dictionary<string, TermInfo>> docsIndex;
         private Dictionary<string, long> finalTermDict;//final posting
         static Mutex m = new Mutex();
         private string corpusFolder;
@@ -32,6 +32,7 @@ namespace IRProject.Model
         private string stopWordsFileName;
         private MyModel model;
         private bool stemming;
+        Parse p;
         #endregion
 
         #region propfull
@@ -186,27 +187,26 @@ namespace IRProject.Model
         /// <param name="fileNames">queue with file names for seperate</param>
         private void splitDocsThreadPool(ConcurrentQueue<string> fileNames)
         {
-            ThreadPool.SetMaxThreads(WORKING_THREADS, COMP_THREADS);
             int totalFiles = fileNames.Count;
-            docsIndex = new ConcurrentDictionary<string, Dictionary<string, TermInfo>>();
-            CountdownEvent threadBarrier = new CountdownEvent(fileNames.Count);
+            docsIndex = new Dictionary<string, Dictionary<string, TermInfo>>();
+            //CountdownEvent threadBarrier = new CountdownEvent(fileNames.Count);
             for (int i = 0; i < totalFiles; i++)
             {
                 string fileName;
                 fileNames.TryDequeue(out fileName);
                 //create a thread for processing the file
-                ThreadPool.QueueUserWorkItem((splitDocs) =>
-                {
-                    splitFile(fileName); //split the file to docs
-                    threadBarrier.Signal();
-                });
-                //write the last docs in the indexer
+                // ThreadPool.QueueUserWorkItem((splitDocs) =>
+                //{
+                splitFile(fileName); //split the file to docs
+                                     //  threadBarrier.Signal();
+                                     //});
+                                     //write the last docs in the indexer
             }
-            threadBarrier.Wait();
+            //threadBarrier.Wait();
             Indexer indexer = new Indexer(model, stemming);
             indexer.merge(postingFolder);
             //get the final doctionary and send notification
-            finalTermDict = indexer.finalTermDict;
+            //finalTermDict = indexer.finalTermDict;
             MessageBox.Show("The inverted index is done!");
 
         }
@@ -233,7 +233,6 @@ namespace IRProject.Model
                 //get the text from the doc
                 string docText = docNode.SelectNodes(".//text").First().InnerText;
                 //send to the parser
-                Parse p;
                 //Check if there is an available Parse in the queue
                 while (!parseQueue.TryDequeue(out p))
                 {
@@ -253,8 +252,8 @@ namespace IRProject.Model
                 //enter to the queue the parser that we used
                 parseQueue.Enqueue(p);
             }
-            Indexer ind = new Indexer();
-            ind.writePostingToFile(docsIndex[fileName], postingFolder, stemming);
+            //Indexer ind = new Indexer();
+            //ind.writePostingToFile(docsIndex[fileName], postingFolder, stemming);
             docsIndex[fileName] = null;
         }
     }

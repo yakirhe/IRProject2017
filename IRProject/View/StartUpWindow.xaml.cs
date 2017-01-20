@@ -20,12 +20,15 @@ namespace IRProject.View
     /// </summary>
     public partial class StartUpWindow : Window
     {
+        static bool firstTime = true;
         MyViewModel vm;
+        Dictionary<string, long> autoCompletePointersDict;
 
         public StartUpWindow()
         {
             InitializeComponent();
             vm = new MyViewModel(new Model.MyModel());
+            //autoCompletePointersDict = vm.getAutoComPointersDict();
         }
 
         private void mainWindowBtn_Click(object sender, RoutedEventArgs e)
@@ -41,7 +44,22 @@ namespace IRProject.View
                 MessageBox.Show("You didn't enter a query to search");
                 return;
             }
-            vm.searchQuery(queryTb.Text,"");
+            vm.searchQuery(queryTb.Text, "");
+        }
+
+        private void queryTb_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+
+            if (e.Key == Key.Space && firstTime)
+            {
+                string word = queryTb.Text.Trim();
+                if (word != "" && autoCompletePointersDict.ContainsKey(word))
+                {
+                    firstTime = false;
+                    List<string> autoCompleteWords = vm.autocomplete(autoCompletePointersDict[word]);
+                    MessageBox.Show(autoCompleteWords[0]);
+                }
+            }
         }
     }
 }

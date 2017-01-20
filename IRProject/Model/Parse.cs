@@ -48,6 +48,22 @@ namespace IRProject.Model
             }
         }
 
+        public string parseQueryFunc(string query)
+        {
+            query = query.ToLower();
+            query = query.Replace("/", " ");
+            unfilteredTerms = query.Split('\n', ' ');
+            filteredTokenes = new List<string>();
+            filterTokensProcedure();
+            string newQuery = "";
+            foreach (string word in filteredTokenes)
+            {
+                newQuery += word + " ";
+            }
+            newQuery = newQuery.Trim();
+            return newQuery;
+        }
+
         #endregion
 
 
@@ -123,7 +139,7 @@ namespace IRProject.Model
         /// </summary>
         private void filterTokensProcedure()
         {
-            if (unfilteredTerms[1].Trim().ToLower() == "language:")
+            if (unfilteredTerms.Length > 1 && unfilteredTerms[1].Trim().ToLower() == "language:")
             {
                 this.docLang = unfilteredTerms[3].ToLower();
             }

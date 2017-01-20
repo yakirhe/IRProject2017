@@ -68,14 +68,14 @@ namespace IRProject.Model
             string remaining = termInfo.Substring(termInfo.IndexOf('*') + 1);
             string[] docInfo = remaining.Split(')');
             List<string> positionList = new List<string>();
-            List<int> positionListInt = new List<int>();
             //now we have info about each doc
             foreach (string docData in docInfo)
             {
+                List<int> positionListInt = new List<int>();
                 string docDataSecond;
                 string docNum = docData.Substring(0, docData.IndexOf('|')).Trim();
                 docDataSecond = docData.Substring(docData.IndexOf('|') + 1);
-                string tf = docDataSecond.Substring(0, docDataSecond.IndexOf('-') - 0);
+                string tf = docDataSecond.Substring(0, docDataSecond.IndexOf('-'));
                 string postion = docDataSecond.Substring(docDataSecond.IndexOf('-') + 1);
                 //There is more then 1 ocurence in this doc
                 if (Int32.Parse(tf) != 1)

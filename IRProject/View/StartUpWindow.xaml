@@ -30,7 +30,7 @@
                 <TextBlock Text="Language" FontSize="15" VerticalAlignment="Center" HorizontalAlignment="Center"></TextBlock>
                 <ComboBox Grid.Row="1"></ComboBox>
             </Grid>
-            <TextBox Name="queryTb"></TextBox>
+            <TextBox Name="queryTb" PreviewKeyDown="queryTb_PreviewKeyDown"></TextBox>
             <Button Name="searchBtn" Content="Search" Grid.Column="2" Height="52" VerticalAlignment="Top" Click="searchBtn_Click"></Button>
             <Button Name="loadQueryBtn" Content="Load queries" Grid.Column="3"></Button>
         </Grid>
