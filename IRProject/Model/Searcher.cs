@@ -9,18 +9,23 @@ namespace IRProject.Model
 {
     class Searcher
     {
-        Ranker ranker;
-        string query;
-        int queryNumber;
-        string language;
-        Parse parseQuery;
-        Dictionary<string, string> stopWordsDict;
-        string stopWordsLocation;
+        #region fields
+        Ranker ranker; //the ranker object that we use for getting the top 50 
+        string query; //the query that the user entered
+        int queryNumber; //the query number
+        string language; //the language of the requierd results
+        Parse parseQuery; //the parser that we use to parse the query
+        Dictionary<string, string> stopWordsDict; //the stop words dictionary
+        string stopWordsLocation; //the path to the stopwords
+        #endregion
 
+        /// <summary>
+        /// the default constructor
+        /// </summary>
         public Searcher()
         {
-            stopWordsLocation = @"..\..\..\stopWords.txt";
-            readStopWords();
+            stopWordsLocation = @"..\..\..\stopWords.txt"; //update the path
+            readStopWords(); //load stopwords
         }
 
         private void readStopWords()
@@ -42,9 +47,18 @@ namespace IRProject.Model
             }
             //Split the words to the stop word list
             string[] stopWordsArray = stopWordsFull.Split('\n', '\r');
-            buildDictionary(stopWordsArray);
+            buildDictionary(stopWordsArray); //build the stopwords dictionary
         }
 
+        /// <summary>
+        /// this is the main function in this part of the project
+        /// this function gets a query and returns a list of relevant queries
+        /// </summary>
+        /// <param name="query"></param>
+        /// <param name="language"></param>
+        /// <param name="ranker"></param>
+        /// <param name="queryNumber"></param>
+        /// <returns></returns>
         public List<string> searchQuery(string query, string language, Ranker ranker, int queryNumber = 0)
         {
             parseQuery = new Parse(stopWordsDict);

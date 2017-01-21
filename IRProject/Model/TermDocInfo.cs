@@ -48,6 +48,11 @@ namespace IRProject.Model
             termPos.Add(pos);
         }
 
+        /// <summary>
+        /// this constructor gets a list with positions of the specific term in a specific doc
+        /// </summary>
+        /// <param name="docNum"></param>
+        /// <param name="positionListInt"></param>
         public TermDocInfo(string docNum, List<int> positionListInt)
         {
             this.docNum = docNum;

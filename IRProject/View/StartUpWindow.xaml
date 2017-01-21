@@ -28,7 +28,7 @@
                     <RowDefinition Height="*"></RowDefinition>
                 </Grid.RowDefinitions>
                 <TextBlock Text="Language" FontSize="15" VerticalAlignment="Center" HorizontalAlignment="Center"></TextBlock>
-                <ListBox Name="langCB" Grid.Row="1" SelectionMode="Multiple" Margin="0,0,0,-160"></ListBox>
+                <ListBox Name="langCB" Grid.Row="1" SelectionMode="Multiple" Margin="0,0,0,-414"></ListBox>
             </Grid>
             <Grid>
                 <Grid.RowDefinitions>

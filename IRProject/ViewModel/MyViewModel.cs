@@ -35,6 +35,10 @@ namespace IRProject.ViewModel
             };
         }
 
+        /// <summary>
+        /// get the autocomplete pointers dictionary and returns it to the view layer
+        /// </summary>
+        /// <returns></returns>
         public Dictionary<string, long> getAutoComPointersDict()
         {
             return model.getAutoComPointersDict();
@@ -63,6 +67,11 @@ namespace IRProject.ViewModel
             }
         }
 
+        /// <summary>
+        /// returns the words suggested from a specific position in the file
+        /// </summary>
+        /// <param name="termPointer"></param>
+        /// <returns></returns>
         public List<string> autocomplete(long termPointer)
         {
             return model.autoComplete(termPointer);

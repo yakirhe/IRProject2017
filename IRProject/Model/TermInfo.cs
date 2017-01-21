@@ -60,6 +60,11 @@ namespace IRProject.Model
             addDocToDict();
         }
 
+        /// <summary>
+        /// this constructor gets a string and convert it to term info
+        /// we use it when we read a line from the posting file and transform it to TermInfo object
+        /// </summary>
+        /// <param name="termInfo"></param>
         public TermInfo(string termInfo)
         {
             docTermsDict = new Dictionary<string, TermDocInfo>();
@@ -87,6 +92,7 @@ namespace IRProject.Model
                         positionListInt.Add(Int32.Parse(pos));
                     }
                 }
+                //only 1 occurence in the doc
                 else
                 {
                     positionListInt.Add(Int32.Parse(postion));
