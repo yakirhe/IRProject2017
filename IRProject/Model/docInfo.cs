@@ -69,6 +69,10 @@ namespace IRProject.Model
             this.uniqueTerms = uniqueTerms;
         }
 
+        /// <summary>
+        /// This constructor init the propertirs from a string
+        /// </summary>
+        /// <param name="docInfo"></param>
         public docInfo(string docInfo)
         {
             //build docInfo object
@@ -80,6 +84,10 @@ namespace IRProject.Model
             this.docLength = Int32.Parse(docInfoArr[4]);
         }
 
+        /// <summary>
+        /// override to string that represent the docInfo object
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return maxTerm + " " + max + " " + lang + " " + uniqueTerms + " " + docLength;

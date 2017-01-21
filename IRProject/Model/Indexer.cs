@@ -234,6 +234,10 @@ namespace IRProject.Model
             //writeDocsDictToFile(postingFolder);
         }
 
+        /// <summary>
+        /// This function write the pointer to file, the pointers represent by position in
+        /// the auto complete file
+        /// </summary>
         private void writeAutoComPointerToDisk()
         {
             using (Stream s = new FileStream("autoCompletePointers.txt", FileMode.Create))
@@ -248,78 +252,7 @@ namespace IRProject.Model
                 }
             }
         }
-
-      //  private void writeAutoComToDisk()
-      //  {
-      //      autoCompletePointers = new Dictionary<string, long>();
-      //      int num = 0;
-      //      using (Stream s = new FileStream("autoComplete.txt", FileMode.Create))
-      //      {
-      //          using (BinaryWriter bw = new BinaryWriter(s))
-      //          {
-      //              foreach (string term in autoCompleteDict.Keys)
-      //              {
-      //                  List<string> list = autoCompleteDict[term].Split(' ').ToList();
-      //                  list = fiveMostCommon(list);
-      //                  autoCompletePointers[term] = bw.BaseStream.Position;
-      //                  if (list == null)
-      //                  {
-      //                      num = 0;
-      //                  }
-      //                  if (list.Count < 5)
-      //                  {
-      //                      num = list.Count;
-      //                  }
-      //                  else
-      //                  {
-      //                      num = 5;
-      //                  }
-      //                  bw.Write(term);
-      //                  bw.Write(num);
-      //                  for (int i = 0; i < num; i++)
-      //                  {
-      //                      bw.Write(list[i]);
-      //                  }
-      //              }
-      //          }
-      //      }
-      //  }
-
-      //  private List<string> fiveMostCommon(List<string> list)
-      //  {
-      //      var most = list.GroupBy(i => i).OrderByDescending(grp => grp.Count())
-      //.Select(grp => grp.Key);
-      //      return most.ToList();
-
-
-      //  }
-
-        //private void writeDocsDictToFile(string postingFolder)
-        //{
-        //    using (Stream s = new FileStream(postingFolder + "\\DocsDict.txt", FileMode.Create))
-        //    {
-        //        using (BinaryWriter br = new BinaryWriter(s))
-        //        {
-        //            foreach (string docId in docsDict.Keys)
-        //            {
-        //                br.Write(docId);
-        //                br.Write(docsDict[docId].ToString());
-        //            }
-        //        }
-        //    }
-        //}
-
-        /// <summary>
-        /// this function add to the language dictionary 
-        /// </summary>
-        //private void buildLanguagesCollection()
-        //{
-        //    foreach (string lang in LangDict.Keys)
-        //    {
-        //        languages.Add(lang);
-        //    }
-        //}
-
+      
         /// <summary>
         /// this function write the dictionary to the disk
         /// </summary>
@@ -581,22 +514,6 @@ namespace IRProject.Model
             return termsDict;
         }
 
-        private void writeDocsTermsToFile(string docId)
-        {
-            //Directory.CreateDirectory("docsTerms");
-            //using (Stream s = new FileStream(@"docsTerms/" + docId + ".txt", FileMode.Create))
-            //{
-            //    using (BinaryWriter bw = new BinaryWriter(s))
-            //    {
-            //        foreach (string term in singleDocTermsDict.Keys)
-            //        {
-            //            bw.Write(term);
-            //            bw.Write(singleDocTermsDict[term]);
-            //        }
-            //    }
-            //}
-        }
-
         /// <summary>
         /// Checks if the language is in the language dictionary
         /// if not add it to the dictionary
@@ -616,26 +533,7 @@ namespace IRProject.Model
         //        }
         //    }
         //}
-
-        /// <summary>
-        /// Add the most frequent term and language of each doc
-        /// to the docs dictionary
-        /// </summary>
-        //private void addToDocsDict()
-        //{
-            //int max = 0;
-            //string maxTerm = "";
-            //foreach (string term in singleDocTermsDict.Keys)
-            //{
-            //    if (singleDocTermsDict[term] > max)
-            //    {
-            //        maxTerm = term;
-            //        max = singleDocTermsDict[term];
-            //    }
-            //}
-            //docInfo dInfo = new docInfo(maxTerm, max, docLang, singleDocTermsDict.Count, filteredTokenes.Count);
-            //docsDict[docId] = dInfo;
-        //}
+        
 
         private void writeToFile(string fileName, string postingFolder)
         {

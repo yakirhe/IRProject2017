@@ -10,6 +10,11 @@ using LAIR.Collections.Generic;
 
 namespace IRProject.Model
 {
+
+    /// <summary>
+    /// This calss responsible on calculate the ranking for each doc
+    /// for each query that insert from the user we calculate the rankuin for each doc
+    /// </summary>
     class Ranker
     {
         private const double k1 = 1.2;
@@ -31,6 +36,9 @@ namespace IRProject.Model
         private WordNetEngine wn;
         string pathToSynonameDict;
 
+        /// <summary>
+        /// This empty constructor 
+        /// </summary>
         public Ranker()
         {
             pathToSynonameDict = @"..\..\..\wordsDb";
@@ -52,6 +60,11 @@ namespace IRProject.Model
             docsWeightResult = new Dictionary<string, double>();
         }
 
+        /// <summary>
+        /// THis function read lines from the posting that represent each word in the query
+        /// and insert that to dictionary
+        /// </summary>
+        /// <param name="query"></param>
         private void buildQueryTermInfoDict(string query)
         {
             queryTermInfoDict = new Dictionary<string, TermInfo>();
@@ -71,6 +84,12 @@ namespace IRProject.Model
             }
         }
 
+        /// <summary>
+        /// This function get stream to the posting file,build term info object and return the object
+        /// </summary>
+        /// <param name="br"></param>
+        /// <param name="word"></param>
+        /// <returns></returns>
         private TermInfo getPostingLine(BinaryReader br, string word)
         {
             long positionToRead = termPointerDict[word];
@@ -82,6 +101,9 @@ namespace IRProject.Model
             return termInfo;
         }
 
+        /// <summary>
+        /// Read term pointer dictionary
+        /// </summary>
         private void readTermPointerDict()
         {
             termPointerDict = new Dictionary<string, long>();
@@ -157,6 +179,11 @@ namespace IRProject.Model
             return top50;
         }
 
+        /// <summary>
+        /// This function write to doc the result of query
+        /// </summary>
+        /// <param name="top50"></param>
+        /// <param name="queryNumber"></param>
         private void writeResults(List<string> top50, int queryNumber = 0)
         {
             int counter = 1;
@@ -174,7 +201,11 @@ namespace IRProject.Model
             }
         }
 
-
+        /// <summary>
+        /// This function return list of 50 most ranking to this query
+        /// </summary>
+        /// <param name="languages"></param>
+        /// <returns></returns>
         private List<string> getTop50(List<string> languages)
         {
             bool checkLang = true;
@@ -208,6 +239,12 @@ namespace IRProject.Model
             return docsToReturn;
         }
 
+        /// <summary>
+        /// This function calculate part of ranking function
+        /// </summary>
+        /// <param name="query"></param>
+        /// <param name="docId"></param>
+        /// <returns></returns>
         private double calculateWeightRating(string query, string docId)
         {
             double numerator = 0;
@@ -286,6 +323,12 @@ namespace IRProject.Model
             }
         }
 
+        /// <summary>
+        /// This function calculate BM25
+        /// </summary>
+        /// <param name="query"></param>
+        /// <param name="docNum"></param>
+        /// <returns></returns>
         public double calculateBM25(string query, string docNum)
         {
             //get the doc length
@@ -310,6 +353,12 @@ namespace IRProject.Model
             return sum;
         }
 
+        /// <summary>
+        /// This function calculation the frequency of word in query
+        /// </summary>
+        /// <param name="word"></param>
+        /// <param name="query"></param>
+        /// <returns></returns>
         private int wordFreqInQueryFunc(string word, string query)
         {
             int termFreqQuery = 0;
@@ -323,6 +372,11 @@ namespace IRProject.Model
             return termFreqQuery;
         }
 
+        /// <summary>
+        /// get the termfrequency docs
+        /// </summary>
+        /// <param name="docNum"></param>
+        /// <param name="word"></param>
         private void getTermFreqDoc(string docNum, string word)
         {
             //check if the term exist in the corpus
@@ -341,7 +395,10 @@ namespace IRProject.Model
             tf = queryTermInfoDict[word].DocTermsDict[docNum].TermFreq;
         }
 
-
+        /// <summary>
+        /// read the terms frequency from the file 
+        /// </summary>
+        /// <param name="docNum"></param>
         private void loadTermsFreqDocToDict(string docNum)
         {
             string test = "docsTerms/ " + docNum + " .txt";

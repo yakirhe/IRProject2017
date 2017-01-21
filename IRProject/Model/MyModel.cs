@@ -41,6 +41,11 @@ namespace IRProject.Model
             searcher = new Searcher();
         }
 
+        /// <summary>
+        /// This function read the auto complete pointers to the memory
+        /// when we want to get the auto complete for some word, we get the pointer
+        /// </summary>
+        /// <returns></returns>
         public Dictionary<string, long> getAutoComPointersDict()
         {
             //read the auto complete pointer dictionary from the disk
@@ -58,6 +63,11 @@ namespace IRProject.Model
             return autoCompletePointersDict;
         }
 
+        /// <summary>
+        /// Read the auto compltete file to the memory
+        /// </summary>
+        /// <param name="termPointer"></param>
+        /// <returns></returns>
         public List<string> autoComplete(long termPointer)
         {
             List<string> autoCompleteList = new List<string>();
@@ -90,6 +100,12 @@ namespace IRProject.Model
             }
         }
 
+        /// <summary>
+        /// Call to the searcher and execute function that return relevant docs for the query
+        /// </summary>
+        /// <param name="query"></param>
+        /// <param name="language"></param>
+        /// <returns></returns>
         public List<string> searchQuery(string query, string language)
         {
             return searcher.searchQuery(query, language, ranker);
@@ -121,6 +137,10 @@ namespace IRProject.Model
             }
         }
 
+        /// <summary>
+        // This function read file that contain queries and search each query in loop
+        /// </summary>
+        /// <param name="queriesFile"></param>
         internal void openQueries(string queriesFile)
         {
             using (Stream s = new FileStream(queriesFile, FileMode.Open))
@@ -152,7 +172,12 @@ namespace IRProject.Model
             }
         }
 
-
+        /// <summary>
+        /// This function execute the indexing
+        /// </summary>
+        /// <param name="stemming"></param>
+        /// <param name="corpus"></param>
+        /// <param name="posting"></param>
         public void startIndexing(bool stemming, string corpus, string posting)
         {
             rf = new ReadFile(stemming, corpus, posting, this);
