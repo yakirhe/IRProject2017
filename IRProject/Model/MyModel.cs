@@ -37,8 +37,8 @@ namespace IRProject.Model
         /// </summary>
         public MyModel()
         {
-            //ranker = new Ranker();
-            //searcher = new Searcher();
+            ranker = new Ranker();
+            searcher = new Searcher();
         }
 
         public Dictionary<string, long> getAutoComPointersDict()
