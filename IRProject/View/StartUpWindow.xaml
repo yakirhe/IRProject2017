@@ -39,7 +39,7 @@
                 <ComboBox Grid.Row="1" Visibility="Hidden" Name="suggestionBox" SelectionChanged="suggestionBox_SelectionChanged"></ComboBox>
             </Grid>
             <Button Name="searchBtn" Content="Search" Grid.Column="2" Height="52" VerticalAlignment="Top" Click="searchBtn_Click"></Button>
-            <Button Name="loadQueryBtn" Content="Load queries" Grid.Column="3"></Button>
+            <Button Name="loadQueryBtn" Content="Load queries" Grid.Column="3" Height="52" VerticalAlignment="Top" Click="loadQueryBtn_Click"></Button>
         </Grid>
         <ListView Name="resultsLV" Grid.Row="2" Margin="0,0,510,0"></ListView>
         <Grid Grid.Row="3">

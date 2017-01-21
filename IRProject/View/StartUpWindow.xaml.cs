@@ -1,4 +1,5 @@
 ﻿using IRProject.ViewModel;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -64,7 +65,7 @@ namespace IRProject.View
             string languages = "";
             foreach (var lang in langCB.SelectedItems)
             {
-                languages += lang.ToString()+" ";
+                languages += lang.ToString() + " ";
             }
             resultsLV.ItemsSource = vm.searchQuery(queryTb.Text, languages.Trim());
         }
@@ -108,6 +109,17 @@ namespace IRProject.View
             }
             string selectedText = suggestionBox.SelectedItem.ToString();
             queryTb.Text = selectedText;
+        }
+
+        private void loadQueryBtn_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+            if (dialog.ShowDialog() == true)
+            {
+                string queriesFile = dialog.FileName;
+                MessageBox.Show("Start proccessing the queries");
+                vm.openQueries(queriesFile);
+            }
         }
     }
 }

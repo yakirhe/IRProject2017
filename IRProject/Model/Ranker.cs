@@ -14,7 +14,7 @@ namespace IRProject.Model
     {
         private const double k1 = 1.2;
         private const double b = 0;
-        private const double alpha = 0.001;
+        private const double alpha = 0.999;
         private Dictionary<string, docInfo> docsInfoDict;//key=docId, value = docInfo
         private Dictionary<string, long> termPointerDict;//key=term, value = pointer
         private Dictionary<string, double> docsRating;//key=docId,value=rating
@@ -127,7 +127,7 @@ namespace IRProject.Model
         /// gets called from the Searcher class and calculate for each document it's BM25 and LSI
         /// </summary>
         /// <param name="query"></param>
-        public List<string> calculateRelevance(string query, string languages)
+        public List<string> calculateRelevance(string query, string languages, int queryNumber = 0)
         {
             List<string> languagesList = languages.Split(' ').ToList();
             docsRating = new Dictionary<string, double>();
@@ -153,26 +153,27 @@ namespace IRProject.Model
             var sortedDict = from entry in docsRating orderby entry.Value descending select entry;
             docsRating = sortedDict.ToDictionary(pair => pair.Key, pair => pair.Value);
             List<string> top50 = getTop50(languagesList);
-            writeResults(top50);
+            writeResults(top50, queryNumber);
             return top50;
         }
 
-        private void writeResults(List<string> top50)
+        private void writeResults(List<string> top50, int queryNumber = 0)
         {
             int counter = 1;
-            using (Stream s = new FileStream("results.txt", FileMode.Create))
+            using (Stream s = new FileStream("results.txt", FileMode.OpenOrCreate))
             {
                 using (StreamWriter sw = new StreamWriter(s))
                 {
+                    sw.BaseStream.Seek(0, SeekOrigin.End);
                     foreach (string docId in top50)
                     {
-                        string line = "11 0 " + docId + " " + (counter++) + " " + docsRating[docId] + " mt";
+                        string line = queryNumber + " 0 " + docId + " " + (counter++) + " " + docsRating[docId] + " mt";
                         sw.WriteLine(line);
                     }
                 }
             }
         }
-            
+
 
         private List<string> getTop50(List<string> languages)
         {

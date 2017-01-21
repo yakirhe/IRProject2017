@@ -11,6 +11,7 @@ namespace IRProject.Model
     {
         Ranker ranker;
         string query;
+        int queryNumber;
         string language;
         Parse parseQuery;
         Dictionary<string, string> stopWordsDict;
@@ -44,11 +45,12 @@ namespace IRProject.Model
             buildDictionary(stopWordsArray);
         }
 
-        public List<string> searchQuery(string query, string language, Ranker ranker)
+        public List<string> searchQuery(string query, string language, Ranker ranker, int queryNumber = 0)
         {
             parseQuery = new Parse(stopWordsDict);
             this.query = parseQuery.parseQueryFunc(query);
             this.language = language;
+            this.queryNumber = queryNumber;
             this.ranker = ranker;
             return getTop50();
         }
@@ -72,7 +74,7 @@ namespace IRProject.Model
         /// </summary>
         private List<string> getTop50()
         {
-            return ranker.calculateRelevance(query,language);
+            return ranker.calculateRelevance(query, language, queryNumber);
         }
     }
 }

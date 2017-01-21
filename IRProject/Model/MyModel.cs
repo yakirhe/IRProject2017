@@ -37,8 +37,8 @@ namespace IRProject.Model
         /// </summary>
         public MyModel()
         {
-            ranker = new Ranker();
-            searcher = new Searcher();
+            //ranker = new Ranker();
+            //searcher = new Searcher();
         }
 
         public Dictionary<string, long> getAutoComPointersDict()
@@ -118,6 +118,25 @@ namespace IRProject.Model
             {
                 languages = value;
                 notifyPropertyChanged("Languages");
+            }
+        }
+
+        internal void openQueries(string queriesFile)
+        {
+            using (Stream s = new FileStream(queriesFile, FileMode.Open))
+            {
+                using (StreamReader sr = new StreamReader(s))
+                {
+                    while (!sr.EndOfStream)
+                    {
+                        string queryLine = sr.ReadLine();
+                        string[] queryParts = queryLine.Split(' ');
+                        int queryNum = Int32.Parse(queryParts[0]);
+                        string query = queryParts[1];
+                        searcher.searchQuery(query, "", ranker, queryNum);
+                    }
+                    MessageBox.Show("Finished proccessing the queries");
+                }
             }
         }
 

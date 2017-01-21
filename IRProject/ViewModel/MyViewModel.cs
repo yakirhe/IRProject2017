@@ -120,6 +120,11 @@ namespace IRProject.ViewModel
             model.resetIndex(postingPath);
         }
 
+        internal void openQueries(string queriesFile)
+        {
+            model.openQueries(queriesFile);
+        }
+
         /// <summary>
         /// call to function in the mmodel that load the dictionary to the RAM
         /// </summary>
